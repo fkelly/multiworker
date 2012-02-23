@@ -93,6 +93,17 @@ class ErrorResult(Result):
         self.data=data
 
 
+# TODO: it would be nice to allow this logger to more general
+def addFileHandler(logger,logfile):
+    # remove existing handlers
+    for h in logger.handlers: logger.removeHandler(h)
+    hdlr=RotatingFileHandler(logfile)
+    fmt = logging.Formatter("%(asctime)s %(module)s %(levelname)-5s - %(message)s")
+    hdlr.setFormatter(fmt)
+    # Need to make sure this is the one and only time we're instantiating MultiHandler
+    #logger.addHandler(mlogger.MultiHandler(logfile))
+    logger.addHandler(hdlr)
+
 class Worker(multiprocessing.Process):
 
     def __init__(self,method,data_queue,result_queue,debugger=0,logq=None,loglevel=None): 
@@ -168,9 +179,9 @@ class Worker(multiprocessing.Process):
 class Processor(object):
 
     def __init__(self,worker,methodname, N, block=True,
-                 monitor_delay=2, loglevel=1000, logfile=None): 
-        """ Constructor a worker object and a methodname to call
-            on the object. The optional monitor_delay parameter is the number of seconds
+                 monitor_delay=2, max_time_on_task=60, loglevel=1000, logfile=None): 
+        """ Constructor takes a list of worker objects and a methodname to call
+            on the objects. The optional monitor_delay parameter is the number of seconds
             between calls to the monitor() method -- at this point the monitor method
             simply logs information about the the worker processes
         """
@@ -196,6 +207,7 @@ class Processor(object):
         self.stopped=False
         self.monitor_delay=monitor_delay
         self.block=block
+        self.max_time_on_task=max_time_on_task
         self._results_buffer=[]
         self._failures_buffer=[]
         
@@ -381,10 +393,11 @@ DBG_PORT=4000
 class DbgProcessor(Processor):
 
     def __init__(self, workers, methodname, N, block=True, monitor_delay=2, 
-                 loglevel=1000, dbg_port=DBG_PORT, logfile=None): 
+                 max_time_on_task=60, loglevel=1000, dbg_port=DBG_PORT, logfile=None): 
         self.dbg_port=dbg_port
         super(DbgProcessor,self).__init__(workers,methodname, N, block=block,
-              monitor_delay=monitor_delay, loglevel=loglevel,logfile=logfile)
+              monitor_delay=monitor_delay,max_time_on_task=max_time_on_task,
+              loglevel=loglevel,logfile=logfile)
       
     def addWorker(self,method):
         debugger=0
