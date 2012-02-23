@@ -1,2 +1,0 @@
---get get_results() to work with periodic collection
---comment to explain that once a child has put data into a queue, it won't quit until the queue is drained
